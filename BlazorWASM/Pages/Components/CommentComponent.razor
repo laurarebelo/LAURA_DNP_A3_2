@@ -1,0 +1,49 @@
+﻿@using HttpClients.ClientInterfaces
+@using Domain.DTOs
+@namespace Components
+@inject ICommentService commentService
+
+<link href="css/comment.css" rel="stylesheet"/>
+<div class="comment">
+    <p class="username">@Username</p>
+    <p class="comment-body">@Body</p>
+    <button class="minibutton" @onclick="Upvote">↑</button><span class="num">@NumUpvotes</span><button @onclick="Downvote" class="minibutton">↓</button><span class="num">@NumDownvotes</span>
+</div>
+
+@code {
+
+    [Parameter]
+    public string Subreddit { get; set; }
+
+    [Parameter]
+    public int PostId { get; set; }
+
+    [Parameter]
+    public int CommentId { get; set; }
+
+    [Parameter]
+    public string Username { get; set; }
+
+    [Parameter]
+    public string Body { get; set; }
+
+    [Parameter]
+    public int NumUpvotes { get; set; }
+
+    [Parameter]
+    public int NumDownvotes { get; set; }
+
+    protected void Upvote()
+    {
+        commentService.Upvote(new CommentVoteDto(CommentId, PostId, Subreddit));
+        NumUpvotes++;
+    }
+
+    protected void Downvote()
+    {
+        commentService.Downvote(new CommentVoteDto(CommentId, PostId, Subreddit));
+        NumDownvotes++;
+    }
+
+
+}

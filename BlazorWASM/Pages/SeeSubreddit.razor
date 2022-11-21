@@ -1,0 +1,48 @@
+﻿@page "/Subreddits/{subreddit}"
+@using Domain
+@using HttpClients.ClientInterfaces
+@inject IPostService postService
+@inject NavigationManager navMgr
+
+<link href="css/comment.css" rel="stylesheet"/>
+<div class="center-everything-column">
+    <h1 class="bold">@Subreddit</h1>
+
+    @if (posts == null)
+    {
+        <label>loading posts :)</label>
+    }
+    else
+    {
+        <button class="black-button" @onclick="@(() => navMgr.NavigateTo($"/Subreddits/{Subreddit}/newPost"))">Make a New Post</button>
+        @foreach (Post post in posts)
+        {
+            <div class="comment hover" @onclick="@(() => navMgr.NavigateTo($"/Subreddits/{Subreddit}/posts/{post.Id}"))">
+                <h3>@post.Title</h3>
+                <p>@post.Body</p>
+            </div>
+        }
+    }
+</div>
+
+
+@code {
+
+    [Parameter]
+    public string Subreddit { get; set; }
+    private IEnumerable<Post>? posts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Console.WriteLine("Trying to get posts");
+            posts = await postService.Get(Subreddit, null);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+    }
+
+}

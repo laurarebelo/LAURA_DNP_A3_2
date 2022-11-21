@@ -1,0 +1,109 @@
+﻿@page "/Subreddits/{subreddit}/posts/{postId:int}"
+@using Domain
+@using Domain.DTOs
+@using Components
+@using HttpClients.ClientInterfaces
+@using System.Security.Claims
+@inject IPostService postService
+@inject NavigationManager navMgr
+
+<link href="css/comment.css" rel="stylesheet"/>
+
+@if (post == null)
+{
+    <label>loading post!</label>
+}
+else
+{
+    <button class="black-button" @onclick="@(() => navMgr.NavigateTo($"/Subreddits/{Subreddit}/"))">Back</button>
+
+    <div class="center-everything-column">
+        <div class="comment post">
+            <p class="username">@post.User.Username</p>
+            <h3>@post.Title</h3>
+            <p class="comment-body">@post.Body</p>
+            <button class="minibutton" @onclick="Upvote">↑</button><span class="num">@post.NumUpvotes</span><button @onclick="Downvote" class="minibutton">↓</button><span class="num">@post.NumDownvotes</span>
+        </div>
+        <AuthorizeView>
+            <Authorized>
+                <input class="comment-box" type="text" placeholder="Make a comment :)" @bind="commentContent" @bind:event="oninput"/>
+                <button class="black-button" @onclick="Comment">COMMENT</button>
+            </Authorized>
+        </AuthorizeView>
+
+
+        @foreach (Comment comment in comments)
+        {
+            if (comment == null)
+            {
+                <label>wait</label>
+            }
+            else
+            {
+                <CommentComponent Subreddit="@Subreddit" PostId="@PostId" CommentId="@comment.Id" Username="@comment.User.Username" Body="@comment.Body" NumUpvotes="@comment.NumUpvotes" NumDownvotes="@comment.NumDownvotes"/>
+            }
+        }
+    </div>
+}
+
+@code {
+
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthState { get; set; } = null!;
+
+    [Parameter]
+    public string Subreddit { get; set; }
+
+    [Parameter]
+    public int PostId { get; set; }
+    private Post post;
+    private List<Comment> comments;
+    private string loggedInUsername;
+
+    private bool isLoggedIn;
+
+    private string commentContent = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        
+        try
+        {
+            IEnumerable<Post> postsIsh = await postService.Get(Subreddit, PostId);
+            post = postsIsh.First();
+            comments = post.Comments;
+
+            AuthenticationState authState = await AuthState;
+            ClaimsPrincipal user = authState.User;
+            isLoggedIn = user.Identity != null;
+
+            if (!isLoggedIn) return;
+            loggedInUsername = user.Identity!.Name!;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+    }
+
+    protected Task<Post> Upvote()
+    {
+        post.NumUpvotes++;
+        return postService.Upvote(new PostSearchParameters(Subreddit, PostId));
+    }
+
+    protected Task<Post> Downvote()
+    {
+        post.NumDownvotes++;
+        return postService.Downvote(new PostSearchParameters(Subreddit, PostId));
+    }
+
+    protected async Task<Comment> Comment()
+    {
+        Comment result = await postService.Comment(new CommentCreationDto(PostId, commentContent, loggedInUsername, Subreddit));
+        comments.Add(result);
+        commentContent = "";
+        return result;
+    }
+
+}

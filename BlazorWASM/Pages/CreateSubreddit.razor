@@ -1,0 +1,52 @@
+﻿@page "/CreateSubreddit"
+@using HttpClients.ClientInterfaces
+@using Domain.DTOs
+@inject ISubredditService subredditService;
+<AuthorizeView>
+    <Authorized>
+        <div class="card">
+            <h3>Create Subreddit</h3>
+            <div class="form-group field">
+                <label>Title:</label>
+                <input type="text" @bind="title" @bind:event="oninput"/>
+                @if (!string.IsNullOrEmpty(resultMsg))
+                {
+                    <label style="color: @color">@resultMsg</label>
+                }
+            </div>
+            <div class="button-row">
+                <button @onclick="Create" disabled="@(string.IsNullOrEmpty(title))" class="acceptbtn">Create</button>
+            </div>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <p>You cannot create a Subreddit if you are not logged in.</p>
+        <p>Would you like to <a href="Login">login</a>?</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+
+@code {
+    private string title = "";
+    private string resultMsg = "";
+    private string color = "";
+    
+    private async Task Create()
+    {
+        resultMsg = "";
+
+        try
+        {
+            await subredditService.Create(new SubredditCreationDto(title));
+            title = "";
+            resultMsg = "Subreddit successfully created";
+            color = "green";
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            resultMsg = e.Message;
+            color = "red";
+        }
+    }
+}

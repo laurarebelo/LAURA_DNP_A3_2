@@ -1,0 +1,56 @@
+﻿@page "/"
+@page "/Subreddits"
+@using HttpClients.ClientInterfaces
+@inject ISubredditService subredditService
+@inject NavigationManager navMgr
+
+<link href="css/comment.css" rel="stylesheet"/>
+
+<h3 class="centered bold">All Subreddits</h3>
+
+@if (!string.IsNullOrEmpty(msg))
+{
+    <div>
+        <span>@msg</span>
+    </div>
+}
+
+@if (subredditTitles == null)
+{
+    <span>Loading..</span>
+}
+else if (!subredditTitles.Any())
+{
+    <span>No subreddits to be found</span>
+}
+else
+{
+    <div class="users-container">
+        @foreach (String title in subredditTitles)
+        {
+            <div class="subreddit-card" style="cursor: pointer" @onclick="@(() => navMgr.NavigateTo($"/Subreddits/{title}"))">
+                <label style="cursor: pointer">@title</label>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    
+    private IEnumerable<String>? subredditTitles;
+    private string msg = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        msg = "";
+        try
+        {
+            subredditTitles = await subredditService.GetSubreddits();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            msg = e.Message;
+        }
+    }
+}

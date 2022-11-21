@@ -1,0 +1,81 @@
+﻿@page "/Subreddits/{subreddit}/newPost"
+@using Domain.DTOs
+@using HttpClients.ClientInterfaces
+@using Domain
+@using System.Security.Claims
+@inject IPostService postService
+@inject NavigationManager navMgr;
+
+<AuthorizeView>
+    <Authorized>
+        <div class="card">
+            <h3>Make new Post</h3>
+            <div class="form-group field">
+                <label>Title</label>
+                <input type="text" @bind="title" @bind:event="oninput"/>
+                <label>Body:</label>
+                <input type="text" @bind="body" @bind:event="oninput"/>
+                @if (!string.IsNullOrEmpty(resultMsg))
+                {
+                    <label style="color: @color">@resultMsg</label>
+                }
+            </div>
+            <div class="button-row">
+                <button @onclick="Create" disabled="@(string.IsNullOrEmpty(username) && string.IsNullOrEmpty(body) && string.IsNullOrEmpty(username))" class="acceptbtn">Post</button>
+            </div>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <p>You are not logged in, so you cannot post.</p>
+        <p>Wanna login? Click <a href="Login"> here</a> :)</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+
+@code {
+
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthState { get; set; } = null!;
+
+    [Parameter]
+    public string Subreddit { get; set; }
+
+    private string title = "";
+    private string body = "";
+    private string username = "";
+
+    private string resultMsg = "";
+    private string color = "";
+
+    private bool isLoggedIn;
+
+    protected override async Task OnInitializedAsync()
+    {
+        AuthenticationState authState = await AuthState;
+        ClaimsPrincipal user = authState.User;
+        isLoggedIn = user.Identity != null;
+
+        if (!isLoggedIn) return;
+        username = user.Identity!.Name!;
+    }
+
+    private async Task Create()
+    {
+        resultMsg = "";
+
+        try
+        {
+            await postService.Create(new PostCreationDto(title, body, username, Subreddit));
+            resultMsg = "Post successfully created";
+            color = "green";
+            navMgr.NavigateTo($"/Subreddits/{Subreddit}");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            resultMsg = e.Message;
+            color = "red";
+        }
+    }
+
+}
